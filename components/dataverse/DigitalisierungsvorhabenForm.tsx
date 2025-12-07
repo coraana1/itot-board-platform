@@ -121,7 +121,7 @@ export default function DigitalisierungsvorhabenForm({
         </div>
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
-            {editRecord ? "Idee bearbeiten" : "Neue Idee einreichen"}
+            {editRecord ? "Idee bewerten" : "Neue Idee einreichen"}
           </h2>
           <p className="text-sm text-gray-500">
             Eingereicht von: Demo User
@@ -132,38 +132,29 @@ export default function DigitalisierungsvorhabenForm({
       {/* Titel */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Titel der Idee *
+          Titel der Idee
         </label>
         <input
           type="text"
           name="cr6df_name"
           value={formData.cr6df_name || ""}
-          onChange={handleTextChange}
-          required
-          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-          placeholder="z.B. Digitale Zeiterfassung per App"
+          readOnly
+          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
         />
-        <p className="text-xs text-violet-600 mt-1">
-          Ein kurzer, prägnanter Titel für deine Idee (5-200 Zeichen)
-        </p>
       </div>
 
       {/* Beschreibung */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Beschreibung *
+          Beschreibung
         </label>
         <textarea
           name="cr6df_beschreibung"
           value={formData.cr6df_beschreibung || ""}
-          onChange={handleTextChange}
+          readOnly
           rows={6}
-          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
-          placeholder="Beschreibe deine Idee ausführlich: Was ist das Problem? Wie könnte die Lösung aussehen? Welchen Nutzen bringt es?"
+          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed resize-none"
         />
-        <p className="text-xs text-violet-600 mt-1">
-          Je detaillierter die Beschreibung, desto besser kann die Idee bewertet werden (mind. 20 Zeichen)
-        </p>
       </div>
 
       {/* Zusätzliche Felder (nur bei Edit) */}
@@ -172,7 +163,7 @@ export default function DigitalisierungsvorhabenForm({
           <div className="border-t border-gray-200 my-6 pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">ITOT Board Bewertung</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               {/* Komplexität */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -206,27 +197,6 @@ export default function DigitalisierungsvorhabenForm({
                   <option value="562520000">Gering</option>
                   <option value="562520001">Mittel</option>
                   <option value="562520002">Hoch</option>
-                </select>
-              </div>
-
-              {/* Lifecycle-Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status
-                </label>
-                <select
-                  name="cr6df_lifecyclestatus"
-                  value={formData.cr6df_lifecyclestatus || ""}
-                  onChange={handleSelectChange}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-                >
-                  <option value="">-- Auswählen --</option>
-                  <option value="1">Idee eingereicht</option>
-                  <option value="2">Idee wird ITOT-Board vorgestellt</option>
-                  <option value="3">ITOT-Board Bewertung abgeschlossen</option>
-                  <option value="4">In Umsetzung</option>
-                  <option value="5">Abgeschlossen</option>
-                  <option value="6">Abgelehnt</option>
                 </select>
               </div>
             </div>

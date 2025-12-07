@@ -117,7 +117,7 @@ export default function Navbar() {
   const isActive = (path: string) => pathname === path;
 
   return (
-    <nav className="bg-white border-b border-gray-200">
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-14">
           {/* Logo */}
@@ -129,14 +129,24 @@ export default function Navbar() {
           {/* Navigation Links (Mitte) */}
           <div className="flex items-center gap-6">
             <Link
-              href="/dataverse"
+              href="/dashboard"
               className={`text-sm font-medium transition-colors ${
-                isActive("/dataverse")
+                isActive("/dashboard")
                   ? "text-violet-600"
                   : "text-gray-600 hover:text-gray-900"
               }`}
             >
-              Ideen-Pool
+              Dashboard
+            </Link>
+            <Link
+              href="/ideen"
+              className={`text-sm font-medium transition-colors ${
+                isActive("/ideen") || pathname.startsWith("/ideen/")
+                  ? "text-violet-600"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Alle Ideen
             </Link>
           </div>
 
