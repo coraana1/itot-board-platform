@@ -148,6 +148,16 @@ export default function Navbar() {
             >
               Alle Ideen
             </Link>
+            <Link
+              href="/sitzungen"
+              className={`text-sm font-medium transition-colors ${
+                isActive("/sitzungen")
+                  ? "text-violet-600"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Sitzungen
+            </Link>
           </div>
 
           {/* Rechte Seite: User/Login */}

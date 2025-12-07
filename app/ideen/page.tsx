@@ -504,6 +504,15 @@ export default function AlleIdeenPage() {
                           </p>
                         </div>
                       </div>
+                      
+                      {/* Aufwandschätzung */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-500 mb-1">Aufwandschätzung [in Tagen]</label>
+                        <p className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-600">
+                          {editRecord.cr6df_detailanalyse_personentage ?? "–"}
+                        </p>
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-500 mb-1">ITOT Board Begründung</label>
                         <p className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 whitespace-pre-wrap min-h-[60px]">

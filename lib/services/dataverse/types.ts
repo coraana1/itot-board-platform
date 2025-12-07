@@ -126,6 +126,8 @@ export interface DigitalisierungsvorhabenRecord extends DataverseEntity {
   cr6df_planung_geplantesende?: string;
   
   // === Lookup-Felder (kommen als _fieldname_value zurück!) ===
+  _cr6df_itotboardsitzung_value?: string;  // GUID der zugewiesenen Sitzung (Feldname: cr6df_itotBoardSitzung)
+  cr6df_itotboardsitzungname?: string;     // Name der Sitzung (expanded)
   _cr6df_verantwortlicher_value?: string;  // GUID des Verantwortlichen
   _cr6df_ideengeber_value?: string;        // GUID des Ideengebers
   _cr6df_abonnenten_value?: string;        // GUID der Abonnenten
@@ -206,6 +208,46 @@ export interface ApiErrorResponse {
   error: string;
   details?: string;
   code?: string;
+}
+
+// ============================================
+// ITOT Board Sitzung Tabelle
+// ============================================
+
+/**
+ * Interface für ITOT Board Sitzungen (cr6df_itotboardsitzung)
+ * Enthält alle Felder der Sitzungs-Tabelle
+ */
+export interface ITOTBoardSitzung extends DataverseEntity {
+  // === System-Felder ===
+  cr6df_itotboardsitzungid?: string;  // Primary Key (GUID)
+  statecode?: number;
+  statuscode?: number;
+  createdon?: string;
+  modifiedon?: string;
+  _createdby_value?: string;
+  _modifiedby_value?: string;
+  _ownerid_value?: string;
+  
+  // === Sitzungs-Felder ===
+  cr6df_sitzungid?: string;           // Sitzungs-ID (Primary Name)
+  cr6df_sitzungsdatum?: string;       // Datum der Sitzung
+  cr6df_protokoll?: string;           // Protokoll (Memo)
+  _cr6df_teilnehmer_value?: string;   // Teilnehmer (Lookup zu Mitarbeitende)
+  cr6df_teilnehmername?: string;      // Name des Teilnehmers (expanded)
+}
+
+/**
+ * Interface für Mitarbeitende (cr6df_sgsw_mitarbeitende)
+ */
+export interface Mitarbeitende extends DataverseEntity {
+  cr6df_sgsw_mitarbeitendeid?: string;  // Primary Key (GUID)
+  cr6df_vorname?: string;               // Vorname (Primary Name)
+  cr6df_nachname?: string;              // Nachname
+  cr6df_email?: string;                 // E-Mail
+  cr6df_zhaw_user?: string;             // ZHAW User
+  statecode?: number;
+  statuscode?: number;
 }
 
 /**
