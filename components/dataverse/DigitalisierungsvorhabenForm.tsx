@@ -102,6 +102,21 @@ export default function DigitalisierungsvorhabenForm({
     }
   };
 
+  // Status-Badge mit Farben
+  const getStatusBadge = (status?: number) => {
+    switch (status) {
+      case 562520000: return { text: "Eingereicht", class: "bg-gray-100 text-gray-600" };
+      case 562520001: return { text: "ITOT-Board", class: "bg-amber-100 text-amber-700" };
+      case 562520002: return { text: "Bewertet", class: "bg-green-100 text-green-700" };
+      case 562520003: return { text: "In Umsetzung", class: "bg-blue-100 text-blue-700" };
+      case 562520004: return { text: "Abgeschlossen", class: "bg-green-50 text-green-600 border border-green-200" };
+      case 562520005: return { text: "Abgelehnt", class: "bg-red-100 text-red-700" };
+      case 562520006: return { text: "Pausiert", class: "bg-yellow-100 text-yellow-700" };
+      case 562520007: return { text: "Archiviert", class: "bg-gray-50 text-gray-500" };
+      default: return { text: "Keine Phase", class: "bg-violet-100 text-violet-700" };
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="p-6">
       {/* Zurück-Link */}
@@ -111,7 +126,7 @@ export default function DigitalisierungsvorhabenForm({
         className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-6"
       >
         <ArrowLeft size={16} />
-        Zurück zum Ideen-Pool
+        Zurück zum Dashboard
       </button>
 
       {/* Header mit Icon */}
@@ -119,14 +134,24 @@ export default function DigitalisierungsvorhabenForm({
         <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center">
           <Lightbulb size={24} className="text-violet-600" />
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-2xl font-bold text-gray-900">
             {editRecord ? "Idee bewerten" : "Neue Idee einreichen"}
           </h2>
-          <p className="text-sm text-gray-500">
-            Eingereicht von: Demo User
+          <p className="text-sm text-gray-500 mt-1">
+            Eingereicht von: {editRecord?.cr6df_ideengebername || "–"}
+            {editRecord?.createdon && (
+              <span className="ml-2">
+                • {new Date(editRecord.createdon).toLocaleDateString("de-CH", { day: "numeric", month: "short", year: "numeric" })}
+              </span>
+            )}
           </p>
         </div>
+        {editRecord && (
+          <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusBadge(editRecord.cr6df_lifecyclestatus).class}`}>
+            {getStatusBadge(editRecord.cr6df_lifecyclestatus).text}
+          </span>
+        )}
       </div>
 
       {/* Titel */}
@@ -160,9 +185,41 @@ export default function DigitalisierungsvorhabenForm({
       {/* Zusätzliche Felder (nur bei Edit) */}
       {editRecord && (
         <>
+          {/* Idee-Informationen (Read-Only) */}
+          <div className="border-t border-gray-200 my-6 pt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Idee-Informationen</h3>
+            
+            <div className="mb-4">
+              {/* Verantwortlicher */}
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-1">Verantwortlicher</label>
+                <p className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-600">
+                  {editRecord.cr6df_verantwortlichername || "–"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ITOT Board Bewertung (Editierbar) */}
           <div className="border-t border-gray-200 my-6 pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">ITOT Board Bewertung</h3>
             
+            {/* Typ (volle Breite) */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Typ</label>
+              <select
+                name="cr6df_typ"
+                value={formData.cr6df_typ || ""}
+                onChange={handleSelectChange}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+              >
+                <option value="">-- Auswählen --</option>
+                <option value="562520000">Idee</option>
+                <option value="562520001">Vorhaben</option>
+                <option value="562520002">Projekt</option>
+              </select>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               {/* Komplexität */}
               <div>
@@ -201,7 +258,7 @@ export default function DigitalisierungsvorhabenForm({
               </div>
             </div>
 
-            {/* Begründung */}
+            {/* ITOT Board Begründung */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 ITOT Board Begründung
@@ -210,7 +267,7 @@ export default function DigitalisierungsvorhabenForm({
                 name="cr6df_itotboard_begruendung"
                 value={formData.cr6df_itotboard_begruendung || ""}
                 onChange={handleTextChange}
-                rows={4}
+                rows={3}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
                 placeholder="Begründung der Bewertung..."
               />

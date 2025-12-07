@@ -417,13 +417,24 @@ export default function AlleIdeenPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                   <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
                     {/* Header */}
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
-                          <Lightbulb size={20} className="text-violet-600" />
-                        </div>
-                        <h2 className="text-xl font-bold text-gray-900">Idee Details</h2>
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center">
+                        <Lightbulb size={24} className="text-violet-600" />
                       </div>
+                      <div className="flex-1">
+                        <h2 className="text-2xl font-bold text-gray-900">Idee Details</h2>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Eingereicht von: {editRecord.cr6df_ideengebername || "–"}
+                          {editRecord.createdon && (
+                            <span className="ml-2">
+                              • {new Date(editRecord.createdon).toLocaleDateString("de-CH", { day: "numeric", month: "short", year: "numeric" })}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusBadge(editRecord.cr6df_lifecyclestatus).class}`}>
+                        {getStatusBadge(editRecord.cr6df_lifecyclestatus).text}
+                      </span>
                       <button
                         onClick={() => setEditRecord(null)}
                         className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
@@ -434,48 +445,51 @@ export default function AlleIdeenPage() {
                       </button>
                     </div>
 
-                    {/* Status Badge */}
-                    <div className="mb-4">
-                      <span className={`text-xs px-2.5 py-1 rounded-full ${getStatusBadge(editRecord.cr6df_lifecyclestatus).class}`}>
-                        {getStatusBadge(editRecord.cr6df_lifecyclestatus).text}
-                      </span>
-                    </div>
-
                     {/* Titel */}
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-500 mb-1">Titel</label>
-                      <p className="text-lg font-semibold text-gray-900">{editRecord.cr6df_name || "Ohne Titel"}</p>
+                      <p className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-600">
+                        {editRecord.cr6df_name || "Ohne Titel"}
+                      </p>
                     </div>
 
                     {/* Beschreibung */}
                     <div className="mb-6">
                       <label className="block text-sm font-medium text-gray-500 mb-1">Beschreibung</label>
-                      <p className="text-gray-700 whitespace-pre-wrap">{editRecord.cr6df_beschreibung || "Keine Beschreibung"}</p>
+                      <p className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 whitespace-pre-wrap min-h-[100px]">
+                        {editRecord.cr6df_beschreibung || "Keine Beschreibung"}
+                      </p>
                     </div>
 
-                    {/* Meta-Infos */}
-                    <div className="grid grid-cols-2 gap-4 mb-6 py-4 border-t border-b border-gray-100">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-500 mb-1">Verantwortlich</label>
-                        <p className="text-gray-700">{editRecord.cr6df_verantwortlichername || "–"}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-500 mb-1">Erstellt am</label>
-                        <p className="text-gray-700">
-                          {editRecord.createdon 
-                            ? new Date(editRecord.createdon).toLocaleDateString("de-CH", { day: "numeric", month: "long", year: "numeric" })
-                            : "–"}
+                    {/* Idee-Informationen */}
+                    <div className="border-t border-gray-200 pt-4 mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Idee-Informationen</h3>
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-500 mb-1">Verantwortlicher</label>
+                        <p className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-600">
+                          {editRecord.cr6df_verantwortlichername || "–"}
                         </p>
                       </div>
                     </div>
 
                     {/* ITOT Board Bewertung */}
-                    <div className="mb-6">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-3">ITOT Board Bewertung</h3>
-                      <div className="grid grid-cols-2 gap-4">
+                    <div className="border-t border-gray-200 pt-4 mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">ITOT Board Bewertung</h3>
+                      
+                      {/* Typ (volle Breite) */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-500 mb-1">Typ</label>
+                        <p className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-600">
+                          {editRecord.cr6df_typ === 562520000 ? "Idee" :
+                           editRecord.cr6df_typ === 562520001 ? "Vorhaben" :
+                           editRecord.cr6df_typ === 562520002 ? "Projekt" : "–"}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mb-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-500 mb-1">Komplexität</label>
-                          <p className="text-gray-700">
+                          <p className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-600">
                             {editRecord.cr6df_komplexitaet === 562520000 ? "Gering" :
                              editRecord.cr6df_komplexitaet === 562520001 ? "Mittel" :
                              editRecord.cr6df_komplexitaet === 562520002 ? "Hoch" : "Nicht bewertet"}
@@ -483,19 +497,19 @@ export default function AlleIdeenPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-500 mb-1">Kritikalität</label>
-                          <p className="text-gray-700">
+                          <p className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-600">
                             {editRecord.cr6df_kritikalitaet === 562520000 ? "Gering" :
                              editRecord.cr6df_kritikalitaet === 562520001 ? "Mittel" :
                              editRecord.cr6df_kritikalitaet === 562520002 ? "Hoch" : "Nicht bewertet"}
                           </p>
                         </div>
                       </div>
-                      {editRecord.cr6df_itotboard_begruendung && (
-                        <div className="mt-4">
-                          <label className="block text-sm font-medium text-gray-500 mb-1">Begründung</label>
-                          <p className="text-gray-700 whitespace-pre-wrap">{editRecord.cr6df_itotboard_begruendung}</p>
-                        </div>
-                      )}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-500 mb-1">ITOT Board Begründung</label>
+                        <p className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 whitespace-pre-wrap min-h-[60px]">
+                          {editRecord.cr6df_itotboard_begruendung || "–"}
+                        </p>
+                      </div>
                     </div>
 
                     {/* Schliessen Button */}
