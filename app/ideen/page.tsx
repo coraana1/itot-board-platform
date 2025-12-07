@@ -2,36 +2,13 @@
  * Ideen-Übersicht – Liste aller Ideen (alle Status)
  * 
  * Zeigt alle Ideen unabhängig vom Status an.
- * Der Status wird farblich hervorgehoben.
+ * Der Status wird farblich hervorgehoben. Tabelle ist filterbar.
  */
 
-import Link from "next/link";
-import { List, Eye, AlertCircle } from "lucide-react";
+import { List, AlertCircle } from "lucide-react";
 import { getAlleIdeen } from "@/lib/dataverse";
-import type { LifecycleStatus } from "@/lib/types";
 import Navbar from "@/components/Navbar";
-
-/**
- * Gibt die passende Badge-Farbe für einen Status zurück
- */
-function getStatusBadgeClass(status: LifecycleStatus): string {
-  switch (status) {
-    case "Idee eingereicht":
-      return "badge-neutral";
-    case "Idee wird ITOT-Board vorgestellt":
-      return "badge-warning";
-    case "ITOT-Board Bewertung abgeschlossen":
-      return "badge-success";
-    case "In Umsetzung":
-      return "badge-info";
-    case "Abgeschlossen":
-      return "badge-success badge-outline";
-    case "Abgelehnt":
-      return "badge-error";
-    default:
-      return "badge-ghost";
-  }
-}
+import IdeenTable from "@/components/IdeenTable";
 
 export default async function IdeenPage() {
   const ideen = await getAlleIdeen();
@@ -62,45 +39,16 @@ export default async function IdeenPage() {
               <span>Keine Ideen vorhanden.</span>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="table table-zebra bg-base-100 shadow">
-                <thead>
-                  <tr>
-                    <th>Titel</th>
-                    <th>Typ</th>
-                    <th>Status</th>
-                    <th>Verantwortlich</th>
-                    <th className="text-right">Aktion</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ideen.map((idee) => (
-                    <tr key={idee.id} className="hover">
-                      <td className="font-medium">{idee.titel}</td>
-                      <td>
-                        <span className="badge badge-ghost">{idee.typ}</span>
-                      </td>
-                      <td>
-                        <span className={`badge ${getStatusBadgeClass(idee.lifecyclestatus)}`}>
-                          {idee.lifecyclestatus}
-                        </span>
-                      </td>
-                      <td>{idee.verantwortlicher}</td>
-                      <td className="text-right">
-                        <Link 
-                          href={`/ideen/${idee.id}`}
-                          className="btn btn-sm btn-ghost gap-1"
-                        >
-                          <Eye size={16} />
-                          Details
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <IdeenTable ideen={ideen} />
           )}
+
+          {/* Info-Box */}
+          <div className="mt-8 p-4 bg-base-100 rounded-lg border border-base-300">
+            <p className="text-sm text-base-content/70">
+              <strong>Tipp:</strong> Klicke auf die Spaltenüberschriften, um die Tabelle zu sortieren. 
+              Erster Klick = aufsteigend, zweiter Klick = absteigend, dritter Klick = unsortiert.
+            </p>
+          </div>
         </div>
       </main>
     </div>

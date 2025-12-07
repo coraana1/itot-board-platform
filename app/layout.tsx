@@ -6,6 +6,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+import NavbarWrapper from "@/components/layout/NavbarWrapper";
 
 // Geist ist eine moderne, gut lesbare Schriftart
 const geistSans = Geist({
@@ -28,7 +29,8 @@ export default function RootLayout({
     // lang="de" für deutsche Inhalte, data-theme für daisyUI
     <html lang="de" data-theme="corporate">
       <body className={`${geistSans.variable} font-sans antialiased min-h-screen bg-base-200`}>
-        {children}
+        <NavbarWrapper />
+        <main>{children}</main>
       </body>
     </html>
   );
