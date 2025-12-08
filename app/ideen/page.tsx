@@ -10,7 +10,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Lightbulb, Search, Loader2, AlertCircle, User, Calendar } from "lucide-react";
+import { Lightbulb, Search, Loader2, AlertCircle, User, Calendar, ChevronDown, ChevronRight, FileText, FolderKanban } from "lucide-react";
 import LoginPrompt from "@/components/dataverse/LoginPrompt";
 import WhoAmICard from "@/components/dataverse/WhoAmICard";
 import type { DigitalisierungsvorhabenRecord } from "@/lib/services/dataverse/types";
@@ -32,6 +32,14 @@ export default function AlleIdeenPage() {
 
   // Detail-Ansicht
   const [editRecord, setEditRecord] = useState<DigitalisierungsvorhabenRecord | null>(null);
+
+  // Collapsible-State für Typ-Gruppen (alle standardmässig offen)
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
+  // Toggle Gruppe ein-/ausklappen
+  const toggleGroup = (typ: string) => {
+    setCollapsedGroups(prev => ({ ...prev, [typ]: !prev[typ] }));
+  };
 
   // Auth-Status prüfen
   const checkAuth = useCallback(async () => {
@@ -159,7 +167,19 @@ export default function AlleIdeenPage() {
     }
   };
 
-  // Gruppiere nach Typ
+  // Icon für jeden Typ
+  const getTypIcon = (typ: string) => {
+    switch (typ) {
+      case "Idee": return <Lightbulb size={18} className="text-violet-500" />;
+      case "Vorhaben": return <FileText size={18} className="text-violet-500" />;
+      case "Projekt": return <FolderKanban size={18} className="text-violet-500" />;
+      default: return <Lightbulb size={18} className="text-violet-500" />;
+    }
+  };
+
+  // Gruppiere nach Typ mit fester Reihenfolge: Idee → Vorhaben → Projekt
+  const typOrder = ["Idee", "Vorhaben", "Projekt", "Sonstige"];
+  
   const groupedRecords = filteredRecords.reduce((acc, record) => {
     const typ = getTypText(record.cr6df_typ);
     if (!acc[typ]) acc[typ] = [];
@@ -167,18 +187,21 @@ export default function AlleIdeenPage() {
     return acc;
   }, {} as Record<string, DigitalisierungsvorhabenRecord[]>);
 
-  // Status-Badge (Dataverse Picklist-Werte)
+  // Sortierte Gruppen in der richtigen Reihenfolge
+  const sortedGroupEntries = typOrder
+    .filter(typ => groupedRecords[typ] && groupedRecords[typ].length > 0)
+    .map(typ => [typ, groupedRecords[typ]] as [string, DigitalisierungsvorhabenRecord[]]);
+
+  // Status-Badge (Dataverse Lifecycle-Status Picklist-Werte)
   const getStatusBadge = (status?: number) => {
     switch (status) {
       case 562520000: return { text: "Eingereicht", class: "bg-gray-100 text-gray-600" };
-      case 562520001: return { text: "ITOT-Board", class: "bg-amber-100 text-amber-700" };
-      case 562520002: return { text: "Bewertet", class: "bg-green-100 text-green-700" };
-      case 562520003: return { text: "In Umsetzung", class: "bg-blue-100 text-blue-700" };
-      case 562520004: return { text: "Abgeschlossen", class: "bg-green-50 text-green-600 border border-green-200" };
-      case 562520005: return { text: "Abgelehnt", class: "bg-red-100 text-red-700" };
-      case 562520006: return { text: "Pausiert", class: "bg-yellow-100 text-yellow-700" };
-      case 562520007: return { text: "Archiviert", class: "bg-gray-50 text-gray-500" };
-      default: return { text: "Keine Phase", class: "bg-violet-100 text-violet-700" };
+      case 562520003: return { text: "Genehmigt", class: "bg-green-100 text-green-700" };
+      case 562520005: return { text: "ITOT-Board", class: "bg-amber-100 text-amber-700" };
+      case 562520006: return { text: "In Umsetzung", class: "bg-blue-100 text-blue-700" };
+      case 562520007: return { text: "Pausiert", class: "bg-yellow-100 text-yellow-700" };
+      case 562520011: return { text: "Abgeschlossen", class: "bg-green-50 text-green-600 border border-green-200" };
+      default: return { text: `Status ${status || "–"}`, class: "bg-violet-100 text-violet-700" };
     }
   };
 
@@ -204,11 +227,16 @@ export default function AlleIdeenPage() {
       {isAuthenticated && (
         <div className="max-w-5xl mx-auto px-6 py-8">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
-              <Lightbulb size={22} className="text-violet-600" />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
+                <FolderKanban size={22} className="text-violet-600" />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900">Alle Vorhaben</h1>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Alle Ideen</h1>
+            <span className="px-3 py-1 bg-violet-100 text-violet-700 text-sm font-medium rounded-full">
+              {filteredRecords.length} {filteredRecords.length === 1 ? "Vorhaben" : "Vorhaben"}
+            </span>
           </div>
 
           {/* Verbindungsstatus (kompakt) - versteckt, aber im DOM behalten */}
@@ -288,11 +316,11 @@ export default function AlleIdeenPage() {
                   >
                     <option value="">Alle Status</option>
                     <option value="562520000">Eingereicht</option>
-                    <option value="562520001">ITOT-Board</option>
-                    <option value="562520002">Bewertet</option>
-                    <option value="562520003">In Umsetzung</option>
-                    <option value="562520004">Abgeschlossen</option>
-                    <option value="562520005">Abgelehnt</option>
+                    <option value="562520003">Genehmigt</option>
+                    <option value="562520005">ITOT-Board</option>
+                    <option value="562520006">In Umsetzung</option>
+                    <option value="562520007">Pausiert</option>
+                    <option value="562520011">Abgeschlossen</option>
                   </select>
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -319,10 +347,6 @@ export default function AlleIdeenPage() {
                 )}
               </div>
 
-              {/* Anzahl Einträge */}
-              <p className="text-sm text-gray-500 mb-6">
-                {filteredRecords.length} Einträge
-              </p>
 
               {/* Loading */}
               {isLoadingRecords && (
@@ -348,16 +372,25 @@ export default function AlleIdeenPage() {
               )}
 
               {/* Gruppierte Ideen-Cards */}
-              {!isLoadingRecords && !recordsError && Object.entries(groupedRecords).map(([typ, items]) => (
-                <div key={typ} className="mb-8">
-                  {/* Typ-Header */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <Lightbulb size={18} className="text-amber-500" />
+              {!isLoadingRecords && !recordsError && sortedGroupEntries.map(([typ, items]) => (
+                <div key={typ} className="mb-6">
+                  {/* Typ-Header (klickbar zum Ein-/Ausklappen) */}
+                  <button
+                    onClick={() => toggleGroup(typ)}
+                    className="w-full flex items-center gap-2 mb-3 p-2 -ml-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    {collapsedGroups[typ] ? (
+                      <ChevronRight size={18} className="text-gray-400" />
+                    ) : (
+                      <ChevronDown size={18} className="text-gray-400" />
+                    )}
+                    {getTypIcon(typ)}
                     <h2 className="font-semibold text-gray-900">{typ}</h2>
                     <span className="text-sm text-violet-600 font-medium">{items.length}</span>
-                  </div>
+                  </button>
 
-                  {/* Ideen-Cards */}
+                  {/* Ideen-Cards (nur wenn nicht eingeklappt) */}
+                  {!collapsedGroups[typ] && (
                   <div className="space-y-3">
                     {items.map((record) => {
                       const status = getStatusBadge(record.cr6df_lifecyclestatus);
@@ -367,17 +400,15 @@ export default function AlleIdeenPage() {
                           onClick={() => setEditRecord(record)}
                           className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
                         >
-                          {/* Status-Badge oben rechts */}
-                          <div className="flex justify-end mb-2">
-                            <span className={`text-xs px-2.5 py-1 rounded-full ${status.class}`}>
+                          {/* Titel und Status-Badge auf gleicher Höhe */}
+                          <div className="flex items-start justify-between gap-3 mb-1">
+                            <h3 className="font-semibold text-gray-900">
+                              {record.cr6df_name || "Ohne Titel"}
+                            </h3>
+                            <span className={`text-xs px-2.5 py-1 rounded-full whitespace-nowrap ${status.class}`}>
                               {status.text}
                             </span>
                           </div>
-
-                          {/* Titel */}
-                          <h3 className="font-semibold text-gray-900 mb-1">
-                            {record.cr6df_name || "Ohne Titel"}
-                          </h3>
 
                           {/* Beschreibung (gekürzt) */}
                           {record.cr6df_beschreibung && (
@@ -394,6 +425,12 @@ export default function AlleIdeenPage() {
                                 {record.cr6df_verantwortlichername}
                               </span>
                             )}
+                            <span className="flex items-center gap-1">
+                              <span className="text-gray-400">Aufwand:</span>
+                              <span className={record.cr6df_detailanalyse_personentage ? "text-violet-600 font-medium" : "text-gray-400"}>
+                                {record.cr6df_detailanalyse_personentage ? `${record.cr6df_detailanalyse_personentage} Tage` : "–"}
+                              </span>
+                            </span>
                             {record.createdon && (
                               <span className="flex items-center gap-1">
                                 <Calendar size={12} />
@@ -409,6 +446,7 @@ export default function AlleIdeenPage() {
                       );
                     })}
                   </div>
+                  )}
                 </div>
               ))}
 

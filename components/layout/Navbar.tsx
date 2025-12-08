@@ -139,16 +139,6 @@ export default function Navbar() {
               Dashboard
             </Link>
             <Link
-              href="/ideen"
-              className={`text-sm font-medium transition-colors ${
-                isActive("/ideen") || pathname.startsWith("/ideen/")
-                  ? "text-violet-600"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Alle Ideen
-            </Link>
-            <Link
               href="/sitzungen"
               className={`text-sm font-medium transition-colors ${
                 isActive("/sitzungen")
@@ -157,6 +147,16 @@ export default function Navbar() {
               }`}
             >
               Sitzungen
+            </Link>
+            <Link
+              href="/ideen"
+              className={`text-sm font-medium transition-colors ${
+                isActive("/ideen") || pathname.startsWith("/ideen/")
+                  ? "text-violet-600"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Alle Vorhaben
             </Link>
           </div>
 

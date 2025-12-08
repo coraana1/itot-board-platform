@@ -66,9 +66,9 @@ export default function DashboardPage() {
       }
 
       const data = await response.json();
-      // Filtere nur Status 562520001 (Idee wird ITOT-Board vorgestellt)
+      // Filtere nur Status 562520005 (Idee wird ITOT-Board vorgestellt)
       const filtered = (data.value || []).filter(
-        (r: DigitalisierungsvorhabenRecord) => r.cr6df_lifecyclestatus === 562520001
+        (r: DigitalisierungsvorhabenRecord) => r.cr6df_lifecyclestatus === 562520005
       );
       setRecords(filtered);
     } catch (err) {
@@ -229,6 +229,12 @@ export default function DashboardPage() {
                         {record.cr6df_verantwortlichername}
                       </span>
                     )}
+                    <span className="flex items-center gap-1">
+                      <span className="text-gray-400">Aufwand:</span>
+                      <span className={record.cr6df_detailanalyse_personentage ? "text-violet-600 font-medium" : "text-gray-400"}>
+                        {record.cr6df_detailanalyse_personentage ? `${record.cr6df_detailanalyse_personentage} Tage` : "–"}
+                      </span>
+                    </span>
                     {record.createdon && (
                       <span className="flex items-center gap-1">
                         <Calendar size={12} />

@@ -163,7 +163,7 @@ export default function LoginPrompt({ onLoginSuccess }: LoginPromptProps) {
             <button
               onClick={handleLogin}
               disabled={isLoading}
-              className="btn btn-primary btn-lg gap-2"
+              className="btn btn-lg gap-2 bg-violet-600 hover:bg-violet-700 text-white border-none"
             >
               {isLoading ? (
                 <Loader2 size={20} className="animate-spin" />
