@@ -26,15 +26,35 @@ export const kritikalitaetSchema = z.enum(["gering", "mittel", "hoch"], {
 
 /**
  * Schema für Lifecycle-Status
- * Alle möglichen Status-Werte einer Idee
+ * Alle möglichen Status-Werte einer Idee (Dataverse Picklist)
+ * 
+ * Werte:
+ * 562520000 = eingereicht
+ * 562520001 = Idee in Qualitätsprüfung
+ * 562520002 = Idee zur Überarbeitung an Ideengeber
+ * 562520003 = Genehmigt
+ * 562520004 = Abgelehnt
+ * 562520005 = Idee wird ITOT-Board vorgestellt
+ * 562520006 = Idee in Projektportfolio aufgenommen
+ * 562520007 = Idee in Quartalsplanung aufgenommen
+ * 562520008 = Idee in Wochenplanung aufgenommen
+ * 562520009 = Idee in Detailanalyse
+ * 562520010 = In Umsetzung
+ * 562520011 = Abgeschlossen
  */
 export const lifecycleStatusSchema = z.enum([
-  "Idee eingereicht",
+  "eingereicht",
+  "Idee in Qualitätsprüfung",
+  "Idee zur Überarbeitung an Ideengeber",
+  "Genehmigt",
+  "Abgelehnt",
   "Idee wird ITOT-Board vorgestellt",
-  "ITOT-Board Bewertung abgeschlossen",
+  "Idee in Projektportfolio aufgenommen",
+  "Idee in Quartalsplanung aufgenommen",
+  "Idee in Wochenplanung aufgenommen",
+  "Idee in Detailanalyse",
   "In Umsetzung",
   "Abgeschlossen",
-  "Abgelehnt",
 ]);
 
 /**

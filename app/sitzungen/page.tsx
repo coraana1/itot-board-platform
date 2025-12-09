@@ -8,10 +8,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Calendar, FileText, RefreshCw, Plus, Check, Lightbulb, List, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { Calendar, FileText, RefreshCw, Plus, Check, Lightbulb, List, ChevronLeft, ChevronRight, ChevronDown, CalendarDays, Pencil } from "lucide-react";
 import LoginPrompt from "@/components/dataverse/LoginPrompt";
 import WhoAmICard from "@/components/dataverse/WhoAmICard";
-import { ITOTBoardSitzung, DataverseListResponse, DigitalisierungsvorhabenRecord, Mitarbeitende } from "@/lib/services/dataverse/types";
+import DigitalisierungsvorhabenForm from "@/components/dataverse/DigitalisierungsvorhabenForm";
+import { ITOTBoardSitzung, DataverseListResponse, DigitalisierungsvorhabenRecord, Mitarbeitende, DigitalisierungsvorhabenInput } from "@/lib/services/dataverse/types";
 
 export default function SitzungenPage() {
   // Auth-State
@@ -38,12 +39,36 @@ export default function SitzungenPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   
-  // Idee-Zuweisung State
+  // Idee-Zuweisung State (Multi-Select)
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assigningSitzung, setAssigningSitzung] = useState<ITOTBoardSitzung | null>(null);
-  const [selectedIdeaId, setSelectedIdeaId] = useState<string>("");
+  const [selectedIdeaIds, setSelectedIdeaIds] = useState<string[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
   const [assignSuccess, setAssignSuccess] = useState(false);
+
+  // Neue Sitzung erstellen State
+  const [showNewSitzungModal, setShowNewSitzungModal] = useState(false);
+  const [newSitzungDatum, setNewSitzungDatum] = useState("");
+  const [newSitzungProtokoll, setNewSitzungProtokoll] = useState("");
+  const [newSitzungTeilnehmerId, setNewSitzungTeilnehmerId] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [createSuccess, setCreateSuccess] = useState(false);
+
+  // Idee bearbeiten State
+  const [editingIdee, setEditingIdee] = useState<DigitalisierungsvorhabenRecord | null>(null);
+
+  // Collapsible Sitzungen State
+  const [collapsedSitzungen, setCollapsedSitzungen] = useState<Record<string, boolean>>({});
+
+  // Toggle Sitzung ein-/ausklappen
+  const toggleSitzung = (sitzungId: string) => {
+    setCollapsedSitzungen(prev => ({ ...prev, [sitzungId]: !prev[sitzungId] }));
+  };
+
+  // Datum-Filter State
+  const [showFutureSitzungen, setShowFutureSitzungen] = useState(true); // Standard: nur zukünftige
+  const [dateRangeStart, setDateRangeStart] = useState("");
+  const [dateRangeEnd, setDateRangeEnd] = useState("");
 
   // Auth-Status prüfen
   const checkAuth = useCallback(async () => {
@@ -152,25 +177,28 @@ export default function SitzungenPage() {
     }
   };
 
-  // Idee einer Sitzung zuweisen
-  const handleAssignIdea = async () => {
-    if (!assigningSitzung || !selectedIdeaId) return;
+  // Mehrere Ideen einer Sitzung zuweisen
+  const handleAssignIdeas = async () => {
+    if (!assigningSitzung || selectedIdeaIds.length === 0) return;
     
     setIsAssigning(true);
     setAssignSuccess(false);
     
     try {
-      const response = await fetch("/api/dataverse/sitzungen/assign", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ideaId: selectedIdeaId,
-          sitzungId: assigningSitzung.cr6df_itotboardsitzungid,
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error("Fehler beim Zuweisen");
+      // Alle ausgewählten Ideen nacheinander zuweisen
+      for (const ideaId of selectedIdeaIds) {
+        const response = await fetch("/api/dataverse/sitzungen/assign", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ideaId: ideaId,
+            sitzungId: assigningSitzung.cr6df_itotboardsitzungid,
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Fehler beim Zuweisen der Idee ${ideaId}`);
+        }
       }
       
       setAssignSuccess(true);
@@ -178,7 +206,7 @@ export default function SitzungenPage() {
       setTimeout(() => {
         setShowAssignModal(false);
         setAssigningSitzung(null);
-        setSelectedIdeaId("");
+        setSelectedIdeaIds([]);
         setAssignSuccess(false);
         loadIdeen();
       }, 1500);
@@ -189,11 +217,92 @@ export default function SitzungenPage() {
     }
   };
 
+  // Idee zur Auswahl hinzufügen/entfernen (Toggle)
+  const toggleIdeaSelection = (ideaId: string) => {
+    setSelectedIdeaIds(prev => 
+      prev.includes(ideaId) 
+        ? prev.filter(id => id !== ideaId)
+        : [...prev, ideaId]
+    );
+  };
+
   // Modal zum Zuweisen öffnen
   const openAssignModal = (sitzung: ITOTBoardSitzung) => {
     setAssigningSitzung(sitzung);
-    setSelectedIdeaId("");
+    setSelectedIdeaIds([]);
     setShowAssignModal(true);
+  };
+
+  // Neue Sitzung erstellen
+  const handleCreateSitzung = async () => {
+    if (!newSitzungDatum) return;
+    
+    setIsCreating(true);
+    setCreateSuccess(false);
+    
+    try {
+      const response = await fetch("/api/dataverse/sitzungen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sitzungsdatum: newSitzungDatum,
+          protokoll: newSitzungProtokoll || null,
+          teilnehmerId: newSitzungTeilnehmerId || null,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || errorData.error || "Fehler beim Erstellen");
+      }
+      
+      setCreateSuccess(true);
+      // Nach 1.5s Modal schliessen und Sitzungen neu laden
+      setTimeout(() => {
+        setShowNewSitzungModal(false);
+        setNewSitzungDatum("");
+        setNewSitzungProtokoll("");
+        setNewSitzungTeilnehmerId("");
+        setCreateSuccess(false);
+        loadSitzungen();
+      }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Fehler beim Erstellen");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  // Modal für neue Sitzung öffnen
+  const openNewSitzungModal = () => {
+    setNewSitzungDatum("");
+    setNewSitzungProtokoll("");
+    setNewSitzungTeilnehmerId("");
+    setCreateSuccess(false);
+    setShowNewSitzungModal(true);
+  };
+
+  // Idee bearbeiten (Update in Dataverse)
+  const handleUpdateIdee = async (data: DigitalisierungsvorhabenInput) => {
+    if (!editingIdee) return;
+
+    const response = await fetch(
+      `/api/dataverse/digitalisierungsvorhaben/${editingIdee.cr6df_sgsw_digitalisierungsvorhabenid}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }
+    );
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || "Fehler beim Aktualisieren");
+    }
+
+    // Modal schliessen und Ideen neu laden
+    setEditingIdee(null);
+    loadIdeen();
   };
 
   // Sitzung Details öffnen (mit Bearbeitungswerten)
@@ -264,6 +373,43 @@ export default function SitzungenPage() {
     if (!sitzungId) return [];
     return ideen.filter(idee => idee._cr6df_itotboardsitzung_value === sitzungId);
   };
+
+  // ============================================
+  // Gefilterte Sitzungen
+  // ============================================
+  
+  const filteredSitzungen = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return sitzungen.filter(sitzung => {
+      if (!sitzung.cr6df_sitzungsdatum) return false;
+      
+      const sitzungDate = new Date(sitzung.cr6df_sitzungsdatum);
+      sitzungDate.setHours(0, 0, 0, 0);
+      
+      // Filter: Nur zukünftige Sitzungen (inkl. heute)
+      if (showFutureSitzungen && sitzungDate < today) {
+        return false;
+      }
+      
+      // Filter: Datum-Range Start
+      if (dateRangeStart) {
+        const startDate = new Date(dateRangeStart);
+        startDate.setHours(0, 0, 0, 0);
+        if (sitzungDate < startDate) return false;
+      }
+      
+      // Filter: Datum-Range Ende
+      if (dateRangeEnd) {
+        const endDate = new Date(dateRangeEnd);
+        endDate.setHours(23, 59, 59, 999);
+        if (sitzungDate > endDate) return false;
+      }
+      
+      return true;
+    });
+  }, [sitzungen, showFutureSitzungen, dateRangeStart, dateRangeEnd]);
 
   // ============================================
   // Kalender-Funktionen
@@ -411,6 +557,15 @@ export default function SitzungenPage() {
               >
                 <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
               </button>
+
+              {/* Neue Sitzung Button */}
+              <button
+                onClick={openNewSitzungModal}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+              >
+                <Plus size={16} />
+                Neue Sitzung
+              </button>
             </div>
           </div>
 
@@ -418,6 +573,67 @@ export default function SitzungenPage() {
           <div className="hidden">
             <WhoAmICard onLogout={() => handleLogout()} />
           </div>
+
+          {/* Filter-Leiste (nur in Listenansicht) */}
+          {viewMode === "list" && (
+          <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
+            <div className="flex flex-wrap items-center gap-4">
+              {/* Zukünftige Sitzungen Toggle */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showFutureSitzungen}
+                  onChange={(e) => setShowFutureSitzungen(e.target.checked)}
+                  className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
+                />
+                <span className="text-sm text-gray-700">Nur zukünftige Sitzungen</span>
+              </label>
+
+              <div className="h-6 w-px bg-gray-200" />
+
+              {/* Datum-Range */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">Von:</span>
+                <input
+                  type="date"
+                  value={dateRangeStart}
+                  onChange={(e) => setDateRangeStart(e.target.value)}
+                  className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">Bis:</span>
+                <input
+                  type="date"
+                  value={dateRangeEnd}
+                  onChange={(e) => setDateRangeEnd(e.target.value)}
+                  className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+
+              {/* Filter zurücksetzen */}
+              {(dateRangeStart || dateRangeEnd || !showFutureSitzungen) && (
+                <button
+                  onClick={() => {
+                    setDateRangeStart("");
+                    setDateRangeEnd("");
+                    setShowFutureSitzungen(true);
+                  }}
+                  className="text-sm text-violet-600 hover:text-violet-700 font-medium"
+                >
+                  Filter zurücksetzen
+                </button>
+              )}
+
+              {/* Anzahl gefilterte Sitzungen */}
+              <div className="ml-auto">
+                <span className="px-3 py-1 bg-violet-100 text-violet-700 text-sm font-medium rounded-full">
+                  {filteredSitzungen.length} von {sitzungen.length} Sitzungen
+                </span>
+              </div>
+            </div>
+          </div>
+          )}
 
           {/* Fehler-Anzeige */}
           {error && (
@@ -441,74 +657,180 @@ export default function SitzungenPage() {
             </div>
           )}
 
+          {/* Keine Sitzungen nach Filter */}
+          {!isLoading && sitzungen.length > 0 && filteredSitzungen.length === 0 && viewMode === "list" && (
+            <div className="text-center py-12 text-gray-500">
+              <Calendar size={32} className="mx-auto mb-3 text-gray-300" />
+              <p>Keine Sitzungen entsprechen den Filterkriterien.</p>
+              <button
+                onClick={() => {
+                  setDateRangeStart("");
+                  setDateRangeEnd("");
+                  setShowFutureSitzungen(false);
+                }}
+                className="mt-3 text-sm text-violet-600 hover:text-violet-700 font-medium"
+              >
+                Alle Sitzungen anzeigen
+              </button>
+            </div>
+          )}
+
           {/* ============================================ */}
           {/* LISTENANSICHT */}
           {/* ============================================ */}
-          {!isLoading && sitzungen.length > 0 && viewMode === "list" && (
+          {!isLoading && filteredSitzungen.length > 0 && viewMode === "list" && (
             <div className="space-y-4">
-              {sitzungen.map((sitzung) => {
+              {filteredSitzungen.map((sitzung) => {
                 const assignedIdeen = getAssignedIdeen(sitzung.cr6df_itotboardsitzungid);
+                const isCollapsed = collapsedSitzungen[sitzung.cr6df_itotboardsitzungid!];
+                
                 return (
                   <div
                     key={sitzung.cr6df_itotboardsitzungid}
-                    className="bg-white border border-gray-200 rounded-xl p-5 hover:border-violet-300 hover:shadow-md transition-all"
+                    className="bg-white border border-gray-200 rounded-xl overflow-hidden"
                   >
-                    <div className="flex items-start justify-between">
-                      <div 
-                        className="flex-1 cursor-pointer"
-                        onClick={() => openSitzungDetails(sitzung)}
-                      >
-                        {/* Sitzungs-ID */}
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                          {sitzung.cr6df_sitzungid || "Ohne ID"}
-                        </h3>
-                        
-                        {/* Meta-Infos */}
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Calendar size={14} />
-                            {formatDate(sitzung.cr6df_sitzungsdatum)}
-                          </span>
-                          {sitzung.cr6df_protokoll && (
-                            <span className="flex items-center gap-1">
-                              <FileText size={14} />
-                              Protokoll vorhanden
-                            </span>
+                    {/* Sitzungs-Header (klickbar zum Ein-/Ausklappen) */}
+                    <div 
+                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                      onClick={() => toggleSitzung(sitzung.cr6df_itotboardsitzungid!)}
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Collapse Icon */}
+                        <div className={`transition-transform ${isCollapsed ? "" : "rotate-0"}`}>
+                          {isCollapsed ? (
+                            <ChevronRight size={20} className="text-gray-400" />
+                          ) : (
+                            <ChevronDown size={20} className="text-gray-400" />
                           )}
-                          <span className="flex items-center gap-1">
-                            <Lightbulb size={14} />
-                            {assignedIdeen.length} Idee{assignedIdeen.length !== 1 ? "n" : ""}
-                          </span>
+                        </div>
+                        
+                        {/* Sitzungs-Info */}
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {sitzung.cr6df_sitzungid || "Ohne ID"}
+                          </h3>
+                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <Calendar size={14} />
+                              {formatDate(sitzung.cr6df_sitzungsdatum)}
+                            </span>
+                            {sitzung.cr6df_protokoll && (
+                              <span className="flex items-center gap-1">
+                                <FileText size={14} />
+                                Protokoll
+                              </span>
+                            )}
+                            <span className="flex items-center gap-1">
+                              <Lightbulb size={14} />
+                              {assignedIdeen.length} Idee{assignedIdeen.length !== 1 ? "n" : ""}
+                            </span>
+                          </div>
                         </div>
                       </div>
                       
-                      {/* Idee zuweisen Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openAssignModal(sitzung);
-                        }}
-                        className="flex items-center gap-1 px-3 py-1.5 text-sm text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
-                      >
-                        <Plus size={16} />
-                        Idee zuweisen
-                      </button>
+                      {/* Buttons */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openSitzungDetails(sitzung);
+                          }}
+                          className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                          <Pencil size={14} />
+                          Bearbeiten
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openAssignModal(sitzung);
+                          }}
+                          className="flex items-center gap-1 px-3 py-1.5 text-sm text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
+                        >
+                          <Plus size={16} />
+                          Idee zuweisen
+                        </button>
+                      </div>
                     </div>
                     
-                    {/* Zugewiesene Ideen anzeigen */}
-                    {assignedIdeen.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-100">
-                        <p className="text-xs text-gray-500 mb-2">Zugewiesene Ideen:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {assignedIdeen.map((idee) => (
-                            <span
-                              key={idee.cr6df_sgsw_digitalisierungsvorhabenid}
-                              className="px-2 py-1 bg-violet-50 text-violet-700 text-xs rounded-full"
-                            >
-                              {idee.cr6df_name || "Ohne Titel"}
-                            </span>
-                          ))}
-                        </div>
+                    {/* Zugewiesene Ideen Subtabelle (nur wenn nicht eingeklappt) */}
+                    {!isCollapsed && assignedIdeen.length > 0 && (
+                      <div className="border-t border-gray-100 bg-gray-50/50">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="text-xs text-gray-500 uppercase tracking-wider">
+                              <th className="px-4 py-2 text-left font-medium">Titel</th>
+                              <th className="px-4 py-2 text-left font-medium">Typ</th>
+                              <th className="px-4 py-2 text-left font-medium">Komplexität</th>
+                              <th className="px-4 py-2 text-left font-medium">Kritikalität</th>
+                              <th className="px-4 py-2 text-left font-medium">Aufwand</th>
+                              <th className="px-4 py-2 text-right font-medium">Aktion</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {assignedIdeen.map((idee) => (
+                              <tr 
+                                key={idee.cr6df_sgsw_digitalisierungsvorhabenid}
+                                className="border-t border-gray-100 hover:bg-white transition-colors"
+                              >
+                                <td className="px-4 py-3">
+                                  <span className="font-medium text-gray-900">
+                                    {idee.cr6df_name || "Ohne Titel"}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {idee.cr6df_typ === 562520000 ? "Idee" :
+                                   idee.cr6df_typ === 562520001 ? "Vorhaben" :
+                                   idee.cr6df_typ === 562520002 ? "Projekt" : "–"}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                    idee.cr6df_komplexitaet === 562520000 ? "bg-green-100 text-green-700" :
+                                    idee.cr6df_komplexitaet === 562520001 ? "bg-yellow-100 text-yellow-700" :
+                                    idee.cr6df_komplexitaet === 562520002 ? "bg-red-100 text-red-700" :
+                                    "bg-gray-100 text-gray-500"
+                                  }`}>
+                                    {idee.cr6df_komplexitaet === 562520000 ? "Gering" :
+                                     idee.cr6df_komplexitaet === 562520001 ? "Mittel" :
+                                     idee.cr6df_komplexitaet === 562520002 ? "Hoch" : "–"}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                    idee.cr6df_kritikalitaet === 562520000 ? "bg-green-100 text-green-700" :
+                                    idee.cr6df_kritikalitaet === 562520001 ? "bg-yellow-100 text-yellow-700" :
+                                    idee.cr6df_kritikalitaet === 562520002 ? "bg-red-100 text-red-700" :
+                                    "bg-gray-100 text-gray-500"
+                                  }`}>
+                                    {idee.cr6df_kritikalitaet === 562520000 ? "Gering" :
+                                     idee.cr6df_kritikalitaet === 562520001 ? "Mittel" :
+                                     idee.cr6df_kritikalitaet === 562520002 ? "Hoch" : "–"}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {idee.cr6df_detailanalyse_personentage ? `${idee.cr6df_detailanalyse_personentage} Tage` : "–"}
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <button
+                                    onClick={() => setEditingIdee(idee)}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
+                                  >
+                                    <Pencil size={14} />
+                                    Bearbeiten
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    
+                    {/* Keine Ideen Hinweis */}
+                    {!isCollapsed && assignedIdeen.length === 0 && (
+                      <div className="border-t border-gray-100 px-4 py-6 text-center text-sm text-gray-500">
+                        <Lightbulb size={24} className="mx-auto mb-2 text-gray-300" />
+                        Keine Ideen zugewiesen
                       </div>
                     )}
                   </div>
@@ -738,17 +1060,17 @@ export default function SitzungenPage() {
             </div>
           )}
 
-          {/* Idee zuweisen Modal */}
+          {/* Idee zuweisen Modal (Multi-Select) */}
           {showAssignModal && assigningSitzung && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-xl max-w-md w-full p-6">
+              <div className="bg-white rounded-xl max-w-2xl w-full p-6 max-h-[80vh] overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
                     <Plus size={20} className="text-violet-600" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-gray-900">Idee zuweisen</h2>
+                    <h2 className="text-lg font-bold text-gray-900">Ideen zuweisen</h2>
                     <p className="text-sm text-gray-500">{assigningSitzung.cr6df_sitzungid}</p>
                   </div>
                 </div>
@@ -757,37 +1079,122 @@ export default function SitzungenPage() {
                 {assignSuccess && (
                   <div className="flex items-center gap-2 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg mb-4">
                     <Check size={20} />
-                    <span>Idee erfolgreich zugewiesen!</span>
+                    <span>{selectedIdeaIds.length} Idee(n) erfolgreich zugewiesen!</span>
                   </div>
                 )}
 
-                {/* Dropdown */}
+                {/* Multi-Select Liste */}
                 {!assignSuccess && (
                   <>
                     <div className="mb-6">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Idee auswählen
+                        Ideen auswählen (Mehrfachauswahl möglich)
                       </label>
                       {unassignedIdeen.length === 0 ? (
                         <p className="text-sm text-gray-500 italic">
                           Keine unzugewiesenen Ideen vorhanden.
                         </p>
                       ) : (
-                        <select
-                          value={selectedIdeaId}
-                          onChange={(e) => setSelectedIdeaId(e.target.value)}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-                        >
-                          <option value="">-- Idee auswählen --</option>
+                        <div className="border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
                           {unassignedIdeen.map((idee) => (
-                            <option 
-                              key={idee.cr6df_sgsw_digitalisierungsvorhabenid} 
-                              value={idee.cr6df_sgsw_digitalisierungsvorhabenid}
+                            <label
+                              key={idee.cr6df_sgsw_digitalisierungsvorhabenid}
+                              className={`block p-4 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
+                                selectedIdeaIds.includes(idee.cr6df_sgsw_digitalisierungsvorhabenid!)
+                                  ? "bg-violet-50"
+                                  : ""
+                              }`}
                             >
-                              {idee.cr6df_name || "Ohne Titel"}
-                            </option>
+                              <div className="flex items-start gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedIdeaIds.includes(idee.cr6df_sgsw_digitalisierungsvorhabenid!)}
+                                  onChange={() => toggleIdeaSelection(idee.cr6df_sgsw_digitalisierungsvorhabenid!)}
+                                  className="w-4 h-4 mt-1 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  {/* Titel */}
+                                  <p className="font-medium text-gray-900">
+                                    {idee.cr6df_name || "Ohne Titel"}
+                                  </p>
+                                  
+                                  {/* Beschreibung */}
+                                  {idee.cr6df_beschreibung && (
+                                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                                      {idee.cr6df_beschreibung}
+                                    </p>
+                                  )}
+                                  
+                                  {/* Metadaten */}
+                                  <div className="flex flex-wrap items-center gap-3 mt-2 text-xs">
+                                    {/* Typ */}
+                                    <span className={`px-2 py-0.5 rounded-full ${
+                                      idee.cr6df_typ === 562520000 ? "bg-amber-100 text-amber-700" :
+                                      idee.cr6df_typ === 562520001 ? "bg-blue-100 text-blue-700" :
+                                      idee.cr6df_typ === 562520002 ? "bg-purple-100 text-purple-700" :
+                                      "bg-gray-100 text-gray-500"
+                                    }`}>
+                                      {idee.cr6df_typ === 562520000 ? "Idee" :
+                                       idee.cr6df_typ === 562520001 ? "Vorhaben" :
+                                       idee.cr6df_typ === 562520002 ? "Projekt" : "Kein Typ"}
+                                    </span>
+                                    
+                                    {/* Verantwortlicher */}
+                                    {idee.cr6df_verantwortlichername && (
+                                      <span className="text-gray-500">
+                                        👤 {idee.cr6df_verantwortlichername}
+                                      </span>
+                                    )}
+                                    
+                                    {/* Ideengeber */}
+                                    {idee.cr6df_ideengebername && (
+                                      <span className="text-gray-500">
+                                        💡 {idee.cr6df_ideengebername}
+                                      </span>
+                                    )}
+                                    
+                                    {/* Erstelldatum */}
+                                    {idee.createdon && (
+                                      <span className="text-gray-400">
+                                        {new Date(idee.createdon).toLocaleDateString("de-CH", {
+                                          day: "numeric",
+                                          month: "short",
+                                          year: "numeric",
+                                        })}
+                                      </span>
+                                    )}
+                                    
+                                    {/* Komplexität */}
+                                    {idee.cr6df_komplexitaet !== undefined && (
+                                      <span className={`px-2 py-0.5 rounded-full ${
+                                        idee.cr6df_komplexitaet === 562520000 ? "bg-green-100 text-green-700" :
+                                        idee.cr6df_komplexitaet === 562520001 ? "bg-yellow-100 text-yellow-700" :
+                                        idee.cr6df_komplexitaet === 562520002 ? "bg-red-100 text-red-700" :
+                                        "bg-gray-100 text-gray-500"
+                                      }`}>
+                                        Kompl: {idee.cr6df_komplexitaet === 562520000 ? "Gering" :
+                                         idee.cr6df_komplexitaet === 562520001 ? "Mittel" :
+                                         idee.cr6df_komplexitaet === 562520002 ? "Hoch" : "–"}
+                                      </span>
+                                    )}
+                                    
+                                    {/* Aufwand */}
+                                    {idee.cr6df_detailanalyse_personentage && (
+                                      <span className="text-violet-600 font-medium">
+                                        {idee.cr6df_detailanalyse_personentage} Tage
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </label>
                           ))}
-                        </select>
+                        </div>
+                      )}
+                      {selectedIdeaIds.length > 0 && (
+                        <p className="text-sm text-violet-600 mt-2 font-medium">
+                          {selectedIdeaIds.length} Idee(n) ausgewählt
+                        </p>
                       )}
                     </div>
 
@@ -797,15 +1204,15 @@ export default function SitzungenPage() {
                         onClick={() => {
                           setShowAssignModal(false);
                           setAssigningSitzung(null);
-                          setSelectedIdeaId("");
+                          setSelectedIdeaIds([]);
                         }}
                         className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium rounded-lg transition-colors"
                       >
                         Abbrechen
                       </button>
                       <button
-                        onClick={handleAssignIdea}
-                        disabled={!selectedIdeaId || isAssigning}
+                        onClick={handleAssignIdeas}
+                        disabled={selectedIdeaIds.length === 0 || isAssigning}
                         className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         {isAssigning ? (
@@ -814,12 +1221,127 @@ export default function SitzungenPage() {
                             Wird zugewiesen...
                           </>
                         ) : (
-                          "Zuweisen"
+                          `${selectedIdeaIds.length} Idee(n) zuweisen`
                         )}
                       </button>
                     </div>
                   </>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Neue Sitzung Modal */}
+          {showNewSitzungModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl max-w-md w-full p-6">
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
+                    <Plus size={20} className="text-violet-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">Neue Sitzung erstellen</h2>
+                  </div>
+                </div>
+
+                {/* Erfolgs-Anzeige */}
+                {createSuccess && (
+                  <div className="flex items-center gap-2 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg mb-4">
+                    <Check size={20} />
+                    <span>Sitzung erfolgreich erstellt!</span>
+                  </div>
+                )}
+
+                {/* Formular */}
+                {!createSuccess && (
+                  <>
+                    <div className="space-y-4 mb-6">
+                      {/* Datum */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Sitzungsdatum *
+                        </label>
+                        <input
+                          type="date"
+                          value={newSitzungDatum}
+                          onChange={(e) => setNewSitzungDatum(e.target.value)}
+                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        />
+                      </div>
+
+                      {/* Teilnehmer */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Teilnehmer (optional)
+                        </label>
+                        <select
+                          value={newSitzungTeilnehmerId}
+                          onChange={(e) => setNewSitzungTeilnehmerId(e.target.value)}
+                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        >
+                          <option value="">-- Kein Teilnehmer --</option>
+                          {mitarbeitende.map((ma) => (
+                            <option key={ma.cr6df_sgsw_mitarbeitendeid} value={ma.cr6df_sgsw_mitarbeitendeid}>
+                              {ma.cr6df_email || ""} {ma.cr6df_nachname || ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Protokoll */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Protokoll (optional)
+                        </label>
+                        <textarea
+                          value={newSitzungProtokoll}
+                          onChange={(e) => setNewSitzungProtokoll(e.target.value)}
+                          placeholder="Notizen zur Sitzung..."
+                          rows={4}
+                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Buttons */}
+                    <div className="flex justify-end gap-3">
+                      <button
+                        onClick={() => setShowNewSitzungModal(false)}
+                        className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium rounded-lg transition-colors"
+                      >
+                        Abbrechen
+                      </button>
+                      <button
+                        onClick={handleCreateSitzung}
+                        disabled={!newSitzungDatum || isCreating}
+                        className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {isCreating ? (
+                          <>
+                            <RefreshCw size={16} className="animate-spin" />
+                            Wird erstellt...
+                          </>
+                        ) : (
+                          "Sitzung erstellen"
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Idee bearbeiten Modal */}
+          {editingIdee && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <DigitalisierungsvorhabenForm
+                  editRecord={editingIdee}
+                  onSubmit={handleUpdateIdee}
+                  onCancel={() => setEditingIdee(null)}
+                />
               </div>
             </div>
           )}

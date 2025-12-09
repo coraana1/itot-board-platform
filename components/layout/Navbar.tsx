@@ -129,16 +129,6 @@ export default function Navbar() {
           {/* Navigation Links (Mitte) */}
           <div className="flex items-center gap-6">
             <Link
-              href="/dashboard"
-              className={`text-sm font-medium transition-colors ${
-                isActive("/dashboard")
-                  ? "text-violet-600"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Dashboard
-            </Link>
-            <Link
               href="/sitzungen"
               className={`text-sm font-medium transition-colors ${
                 isActive("/sitzungen")
