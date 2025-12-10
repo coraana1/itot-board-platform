@@ -35,13 +35,18 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    const { protokoll, teilnehmerId } = body;
+    const { protokoll, teilnehmerId, sitzungsdatum } = body;
 
     // Update-Payload erstellen
     const updatePayload: Record<string, string | null> = {};
     
     if (protokoll !== undefined) {
       updatePayload["cr6df_protokoll"] = protokoll;
+    }
+    
+    // Sitzungsdatum aktualisieren
+    if (sitzungsdatum !== undefined) {
+      updatePayload["cr6df_sitzungsdatum"] = sitzungsdatum;
     }
     
     // Teilnehmer ist ein Lookup-Feld zur Mitarbeitende-Tabelle

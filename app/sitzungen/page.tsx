@@ -8,7 +8,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Calendar, FileText, RefreshCw, Plus, Check, Lightbulb, List, ChevronLeft, ChevronRight, ChevronDown, CalendarDays, Pencil } from "lucide-react";
+import { Calendar, FileText, RefreshCw, Plus, Check, Lightbulb, List, ChevronLeft, ChevronRight, ChevronDown, CalendarDays, Pencil, Search, User } from "lucide-react";
 import LoginPrompt from "@/components/dataverse/LoginPrompt";
 import WhoAmICard from "@/components/dataverse/WhoAmICard";
 import DigitalisierungsvorhabenForm from "@/components/dataverse/DigitalisierungsvorhabenForm";
@@ -36,6 +36,7 @@ export default function SitzungenPage() {
   // Bearbeitungs-State für Sitzung
   const [editProtokoll, setEditProtokoll] = useState("");
   const [editTeilnehmerId, setEditTeilnehmerId] = useState("");
+  const [editSitzungsdatum, setEditSitzungsdatum] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   
@@ -45,6 +46,7 @@ export default function SitzungenPage() {
   const [selectedIdeaIds, setSelectedIdeaIds] = useState<string[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
   const [assignSuccess, setAssignSuccess] = useState(false);
+  const [assignSearchQuery, setAssignSearchQuery] = useState("");
 
   // Neue Sitzung erstellen State
   const [showNewSitzungModal, setShowNewSitzungModal] = useState(false);
@@ -65,9 +67,9 @@ export default function SitzungenPage() {
     setCollapsedSitzungen(prev => ({ ...prev, [sitzungId]: !prev[sitzungId] }));
   };
 
-  // Datum-Filter State
-  const [showFutureSitzungen, setShowFutureSitzungen] = useState(true); // Standard: nur zukünftige
-  const [dateRangeStart, setDateRangeStart] = useState("");
+  // Datum-Filter State (Standard: heutiges Datum als "Von")
+  const getTodayString = () => new Date().toISOString().split("T")[0];
+  const [dateRangeStart, setDateRangeStart] = useState(getTodayString());
   const [dateRangeEnd, setDateRangeEnd] = useState("");
 
   // Auth-Status prüfen
@@ -230,6 +232,7 @@ export default function SitzungenPage() {
   const openAssignModal = (sitzung: ITOTBoardSitzung) => {
     setAssigningSitzung(sitzung);
     setSelectedIdeaIds([]);
+    setAssignSearchQuery("");
     setShowAssignModal(true);
   };
 
@@ -310,6 +313,8 @@ export default function SitzungenPage() {
     setSelectedSitzung(sitzung);
     setEditProtokoll(sitzung.cr6df_protokoll || "");
     setEditTeilnehmerId(sitzung._cr6df_teilnehmer_value || "");
+    // Datum für Input formatieren (YYYY-MM-DD)
+    setEditSitzungsdatum(sitzung.cr6df_sitzungsdatum ? sitzung.cr6df_sitzungsdatum.split("T")[0] : "");
     setSaveSuccess(false);
   };
 
@@ -327,6 +332,7 @@ export default function SitzungenPage() {
         body: JSON.stringify({
           protokoll: editProtokoll,
           teilnehmerId: editTeilnehmerId || null,
+          sitzungsdatum: editSitzungsdatum || null,
         }),
       });
       
@@ -346,6 +352,7 @@ export default function SitzungenPage() {
         ...prev,
         cr6df_protokoll: editProtokoll,
         _cr6df_teilnehmer_value: editTeilnehmerId || undefined,
+        cr6df_sitzungsdatum: editSitzungsdatum || undefined,
       } : null);
       
     } catch (err) {
@@ -388,12 +395,7 @@ export default function SitzungenPage() {
       const sitzungDate = new Date(sitzung.cr6df_sitzungsdatum);
       sitzungDate.setHours(0, 0, 0, 0);
       
-      // Filter: Nur zukünftige Sitzungen (inkl. heute)
-      if (showFutureSitzungen && sitzungDate < today) {
-        return false;
-      }
-      
-      // Filter: Datum-Range Start
+      // Filter: Datum-Range Start (Standard: heute)
       if (dateRangeStart) {
         const startDate = new Date(dateRangeStart);
         startDate.setHours(0, 0, 0, 0);
@@ -409,7 +411,7 @@ export default function SitzungenPage() {
       
       return true;
     });
-  }, [sitzungen, showFutureSitzungen, dateRangeStart, dateRangeEnd]);
+  }, [sitzungen, dateRangeStart, dateRangeEnd]);
 
   // ============================================
   // Kalender-Funktionen
@@ -578,46 +580,56 @@ export default function SitzungenPage() {
           {viewMode === "list" && (
           <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
             <div className="flex flex-wrap items-center gap-4">
-              {/* Zukünftige Sitzungen Toggle */}
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showFutureSitzungen}
-                  onChange={(e) => setShowFutureSitzungen(e.target.checked)}
-                  className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
-                />
-                <span className="text-sm text-gray-700">Nur zukünftige Sitzungen</span>
-              </label>
-
-              <div className="h-6 w-px bg-gray-200" />
-
               {/* Datum-Range */}
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500">Von:</span>
-                <input
-                  type="date"
-                  value={dateRangeStart}
-                  onChange={(e) => setDateRangeStart(e.target.value)}
-                  className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={dateRangeStart}
+                    onChange={(e) => setDateRangeStart(e.target.value)}
+                    className="px-3 py-1.5 pr-8 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  />
+                  {dateRangeStart && (
+                    <button
+                      onClick={() => setDateRangeStart("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600 rounded"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500">Bis:</span>
-                <input
-                  type="date"
-                  value={dateRangeEnd}
-                  onChange={(e) => setDateRangeEnd(e.target.value)}
-                  className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={dateRangeEnd}
+                    onChange={(e) => setDateRangeEnd(e.target.value)}
+                    className="px-3 py-1.5 pr-8 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  />
+                  {dateRangeEnd && (
+                    <button
+                      onClick={() => setDateRangeEnd("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600 rounded"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* Filter zurücksetzen */}
-              {(dateRangeStart || dateRangeEnd || !showFutureSitzungen) && (
+              {/* Filter zurücksetzen (zeigt heutiges Datum wieder) */}
+              {(dateRangeStart !== getTodayString() || dateRangeEnd) && (
                 <button
                   onClick={() => {
-                    setDateRangeStart("");
+                    setDateRangeStart(getTodayString());
                     setDateRangeEnd("");
-                    setShowFutureSitzungen(true);
                   }}
                   className="text-sm text-violet-600 hover:text-violet-700 font-medium"
                 >
@@ -666,7 +678,6 @@ export default function SitzungenPage() {
                 onClick={() => {
                   setDateRangeStart("");
                   setDateRangeEnd("");
-                  setShowFutureSitzungen(false);
                 }}
                 className="mt-3 text-sm text-violet-600 hover:text-violet-700 font-medium"
               >
@@ -965,12 +976,15 @@ export default function SitzungenPage() {
                   </p>
                 </div>
 
-                {/* Datum */}
+                {/* Datum (editierbar) */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Sitzungsdatum</label>
-                  <p className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-600">
-                    {formatDate(selectedSitzung.cr6df_sitzungsdatum)}
-                  </p>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Sitzungsdatum</label>
+                  <input
+                    type="date"
+                    value={editSitzungsdatum}
+                    onChange={(e) => setEditSitzungsdatum(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  />
                 </div>
 
                 {/* Teilnehmer (editierbar - Dropdown) */}
@@ -1063,7 +1077,7 @@ export default function SitzungenPage() {
           {/* Idee zuweisen Modal (Multi-Select) */}
           {showAssignModal && assigningSitzung && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-xl max-w-2xl w-full p-6 max-h-[80vh] overflow-y-auto">
+              <div className="bg-white rounded-xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
@@ -1090,106 +1104,122 @@ export default function SitzungenPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Ideen auswählen (Mehrfachauswahl möglich)
                       </label>
+                      
+                      {/* Suchfeld */}
+                      <div className="relative mb-3">
+                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Ideen durchsuchen..."
+                          value={assignSearchQuery}
+                          onChange={(e) => setAssignSearchQuery(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                        />
+                      </div>
+                      
                       {unassignedIdeen.length === 0 ? (
                         <p className="text-sm text-gray-500 italic">
                           Keine unzugewiesenen Ideen vorhanden.
                         </p>
                       ) : (
-                        <div className="border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
-                          {unassignedIdeen.map((idee) => (
-                            <label
-                              key={idee.cr6df_sgsw_digitalisierungsvorhabenid}
-                              className={`block p-4 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
-                                selectedIdeaIds.includes(idee.cr6df_sgsw_digitalisierungsvorhabenid!)
-                                  ? "bg-violet-50"
-                                  : ""
-                              }`}
-                            >
-                              <div className="flex items-start gap-3">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedIdeaIds.includes(idee.cr6df_sgsw_digitalisierungsvorhabenid!)}
-                                  onChange={() => toggleIdeaSelection(idee.cr6df_sgsw_digitalisierungsvorhabenid!)}
-                                  className="w-4 h-4 mt-1 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  {/* Titel */}
-                                  <p className="font-medium text-gray-900">
-                                    {idee.cr6df_name || "Ohne Titel"}
-                                  </p>
-                                  
-                                  {/* Beschreibung */}
-                                  {idee.cr6df_beschreibung && (
-                                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                                      {idee.cr6df_beschreibung}
-                                    </p>
-                                  )}
-                                  
-                                  {/* Metadaten */}
-                                  <div className="flex flex-wrap items-center gap-3 mt-2 text-xs">
-                                    {/* Typ */}
-                                    <span className={`px-2 py-0.5 rounded-full ${
-                                      idee.cr6df_typ === 562520000 ? "bg-amber-100 text-amber-700" :
-                                      idee.cr6df_typ === 562520001 ? "bg-blue-100 text-blue-700" :
-                                      idee.cr6df_typ === 562520002 ? "bg-purple-100 text-purple-700" :
-                                      "bg-gray-100 text-gray-500"
-                                    }`}>
-                                      {idee.cr6df_typ === 562520000 ? "Idee" :
-                                       idee.cr6df_typ === 562520001 ? "Vorhaben" :
-                                       idee.cr6df_typ === 562520002 ? "Projekt" : "Kein Typ"}
-                                    </span>
-                                    
-                                    {/* Verantwortlicher */}
-                                    {idee.cr6df_verantwortlichername && (
-                                      <span className="text-gray-500">
-                                        👤 {idee.cr6df_verantwortlichername}
-                                      </span>
-                                    )}
-                                    
-                                    {/* Ideengeber */}
-                                    {idee.cr6df_ideengebername && (
-                                      <span className="text-gray-500">
-                                        💡 {idee.cr6df_ideengebername}
-                                      </span>
-                                    )}
-                                    
-                                    {/* Erstelldatum */}
-                                    {idee.createdon && (
-                                      <span className="text-gray-400">
-                                        {new Date(idee.createdon).toLocaleDateString("de-CH", {
-                                          day: "numeric",
-                                          month: "short",
-                                          year: "numeric",
-                                        })}
-                                      </span>
-                                    )}
-                                    
-                                    {/* Komplexität */}
-                                    {idee.cr6df_komplexitaet !== undefined && (
-                                      <span className={`px-2 py-0.5 rounded-full ${
-                                        idee.cr6df_komplexitaet === 562520000 ? "bg-green-100 text-green-700" :
-                                        idee.cr6df_komplexitaet === 562520001 ? "bg-yellow-100 text-yellow-700" :
-                                        idee.cr6df_komplexitaet === 562520002 ? "bg-red-100 text-red-700" :
-                                        "bg-gray-100 text-gray-500"
-                                      }`}>
-                                        Kompl: {idee.cr6df_komplexitaet === 562520000 ? "Gering" :
-                                         idee.cr6df_komplexitaet === 562520001 ? "Mittel" :
-                                         idee.cr6df_komplexitaet === 562520002 ? "Hoch" : "–"}
-                                      </span>
-                                    )}
-                                    
-                                    {/* Aufwand */}
-                                    {idee.cr6df_detailanalyse_personentage && (
-                                      <span className="text-violet-600 font-medium">
-                                        {idee.cr6df_detailanalyse_personentage} Tage
-                                      </span>
-                                    )}
-                                  </div>
+                        <>
+                          {/* Gefilterte Ideen */}
+                          {(() => {
+                            const filteredIdeen = unassignedIdeen.filter((idee) => {
+                              if (!assignSearchQuery) return true;
+                              const query = assignSearchQuery.toLowerCase();
+                              return (
+                                idee.cr6df_name?.toLowerCase().includes(query) ||
+                                idee.cr6df_beschreibung?.toLowerCase().includes(query) ||
+                                idee.cr6df_verantwortlichername?.toLowerCase().includes(query) ||
+                                idee.cr6df_ideengebername?.toLowerCase().includes(query)
+                              );
+                            });
+                            
+                            if (filteredIdeen.length === 0) {
+                              return (
+                                <div className="text-center py-8 text-gray-500">
+                                  <p>Keine Ideen gefunden für "{assignSearchQuery}"</p>
                                 </div>
+                              );
+                            }
+                            
+                            return (
+                              <div className="border border-gray-200 rounded-lg max-h-[50vh] overflow-y-auto">
+                                {filteredIdeen.map((idee) => (
+                                  <label
+                                    key={idee.cr6df_sgsw_digitalisierungsvorhabenid}
+                                    className={`block p-4 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
+                                      selectedIdeaIds.includes(idee.cr6df_sgsw_digitalisierungsvorhabenid!)
+                                        ? "bg-violet-50"
+                                        : ""
+                                    }`}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedIdeaIds.includes(idee.cr6df_sgsw_digitalisierungsvorhabenid!)}
+                                        onChange={() => toggleIdeaSelection(idee.cr6df_sgsw_digitalisierungsvorhabenid!)}
+                                        className="w-4 h-4 mt-1 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        {/* Titel */}
+                                        <p className="font-medium text-gray-900">
+                                          {idee.cr6df_name || "Ohne Titel"}
+                                        </p>
+                                        
+                                        {/* Beschreibung */}
+                                        {idee.cr6df_beschreibung && (
+                                          <p className="text-sm text-gray-500 mt-1 line-clamp-3">
+                                            {idee.cr6df_beschreibung}
+                                          </p>
+                                        )}
+                                        
+                                        {/* Metadaten (vereinfacht) */}
+                                        <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-500">
+                                          {/* Verantwortlicher */}
+                                          {idee.cr6df_verantwortlichername && (
+                                            <span className="flex items-center gap-1">
+                                              <User size={12} />
+                                              {idee.cr6df_verantwortlichername}
+                                            </span>
+                                          )}
+                                          
+                                          {/* Ideengeber */}
+                                          {idee.cr6df_ideengebername && (
+                                            <span className="flex items-center gap-1">
+                                              <Lightbulb size={12} />
+                                              {idee.cr6df_ideengebername}
+                                            </span>
+                                          )}
+                                          
+                                          {/* Erstelldatum */}
+                                          {idee.createdon && (
+                                            <span className="flex items-center gap-1">
+                                              <Calendar size={12} />
+                                              {new Date(idee.createdon).toLocaleDateString("de-CH", {
+                                                day: "numeric",
+                                                month: "short",
+                                                year: "numeric",
+                                              })}
+                                            </span>
+                                          )}
+                                          
+                                          {/* Aufwand */}
+                                          {idee.cr6df_detailanalyse_personentage && (
+                                            <span className="text-violet-600 font-medium">
+                                              {idee.cr6df_detailanalyse_personentage} Tage
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </label>
+                                ))}
                               </div>
-                            </label>
-                          ))}
-                        </div>
+                            );
+                          })()}
+                        </>
                       )}
                       {selectedIdeaIds.length > 0 && (
                         <p className="text-sm text-violet-600 mt-2 font-medium">
