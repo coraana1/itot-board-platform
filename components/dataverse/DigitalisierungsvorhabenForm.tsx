@@ -209,7 +209,7 @@ export default function DigitalisierungsvorhabenForm({
               <label className="block text-sm font-medium text-gray-700 mb-1">Typ</label>
               <select
                 name="cr6df_typ"
-                value={formData.cr6df_typ || ""}
+                value={formData.cr6df_typ?.toString() ?? ""}
                 onChange={handleSelectChange}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
               >
@@ -228,14 +228,14 @@ export default function DigitalisierungsvorhabenForm({
                 </label>
                 <select
                   name="cr6df_komplexitaet"
-                  value={formData.cr6df_komplexitaet || ""}
+                  value={formData.cr6df_komplexitaet?.toString() ?? ""}
                   onChange={handleSelectChange}
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
                 >
                   <option value="">-- Auswählen --</option>
-                  <option value="562520000">Gering</option>
+                  <option value="562520000">Einfach</option>
                   <option value="562520001">Mittel</option>
-                  <option value="562520002">Hoch</option>
+                  <option value="562520002">Komplex</option>
                 </select>
               </div>
 
@@ -246,7 +246,7 @@ export default function DigitalisierungsvorhabenForm({
                 </label>
                 <select
                   name="cr6df_kritikalitaet"
-                  value={formData.cr6df_kritikalitaet || ""}
+                  value={formData.cr6df_kritikalitaet?.toString() ?? ""}
                   onChange={handleSelectChange}
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
                 >

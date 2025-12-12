@@ -24,9 +24,41 @@ export class DigitalisierungsvorhabenService extends BaseDataverseClient<Digital
 
   /**
    * Holt alle Digitalisierungsvorhaben
+   * Explizit alle relevanten Felder auswählen, damit nichts fehlt
    */
   async listAll(): Promise<DigitalisierungsvorhabenRecord[]> {
     return this.list({
+      select: [
+        "cr6df_sgsw_digitalisierungsvorhabenid",
+        "cr6df_name",
+        "cr6df_beschreibung",
+        "cr6df_typ",
+        "cr6df_lifecyclestatus",
+        "cr6df_komplexitaet",
+        "cr6df_kritikalitaet",
+        "cr6df_prioritat",
+        "cr6df_detailanalyse_personentage",
+        "cr6df_detailanalyse_ergebnis",
+        "cr6df_initalbewertung_begruendung",
+        "cr6df_itotboard_begruendung",
+        "cr6df_pia_pfad",
+        "cr6df_istduplikat",
+        "cr6df_abgelehnt_am",
+        "cr6df_abgeschlossen_am",
+        "cr6df_genehmigt_am",
+        "cr6df_in_ueberarbeitung_am",
+        "cr6df_pia_erstellt_am",
+        "cr6df_planung_geplanterstart",
+        "cr6df_planung_geplantesende",
+        "_cr6df_itotboardsitzung_value",
+        "_cr6df_verantwortlicher_value",
+        "_cr6df_ideengeber_value",
+        "_cr6df_abonnenten_value",
+        "createdon",
+        "modifiedon",
+        "statecode",
+        "statuscode",
+      ],
       orderby: "createdon desc",
     });
   }

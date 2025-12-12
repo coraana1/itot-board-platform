@@ -15,6 +15,9 @@ import DigitalisierungsvorhabenForm from "@/components/dataverse/Digitalisierung
 import { ITOTBoardSitzung, DataverseListResponse, DigitalisierungsvorhabenRecord, Mitarbeitende, DigitalisierungsvorhabenInput } from "@/lib/services/dataverse/types";
 
 export default function SitzungenPage() {
+  // Hilfsfunktion für heutiges Datum (YYYY-MM-DD)
+  const getTodayString = () => new Date().toISOString().split("T")[0];
+
   // Auth-State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -50,8 +53,7 @@ export default function SitzungenPage() {
 
   // Neue Sitzung erstellen State
   const [showNewSitzungModal, setShowNewSitzungModal] = useState(false);
-  const [newSitzungDatum, setNewSitzungDatum] = useState("");
-  const [newSitzungProtokoll, setNewSitzungProtokoll] = useState("");
+  const [newSitzungDatum, setNewSitzungDatum] = useState(getTodayString());
   const [newSitzungTeilnehmerId, setNewSitzungTeilnehmerId] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [createSuccess, setCreateSuccess] = useState(false);
@@ -68,7 +70,6 @@ export default function SitzungenPage() {
   };
 
   // Datum-Filter State (Standard: heutiges Datum als "Von")
-  const getTodayString = () => new Date().toISOString().split("T")[0];
   const [dateRangeStart, setDateRangeStart] = useState(getTodayString());
   const [dateRangeEnd, setDateRangeEnd] = useState("");
 
@@ -249,7 +250,6 @@ export default function SitzungenPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sitzungsdatum: newSitzungDatum,
-          protokoll: newSitzungProtokoll || null,
           teilnehmerId: newSitzungTeilnehmerId || null,
         }),
       });
@@ -263,8 +263,7 @@ export default function SitzungenPage() {
       // Nach 1.5s Modal schliessen und Sitzungen neu laden
       setTimeout(() => {
         setShowNewSitzungModal(false);
-        setNewSitzungDatum("");
-        setNewSitzungProtokoll("");
+        setNewSitzungDatum(getTodayString());
         setNewSitzungTeilnehmerId("");
         setCreateSuccess(false);
         loadSitzungen();
@@ -278,8 +277,7 @@ export default function SitzungenPage() {
 
   // Modal für neue Sitzung öffnen
   const openNewSitzungModal = () => {
-    setNewSitzungDatum("");
-    setNewSitzungProtokoll("");
+    setNewSitzungDatum(getTodayString());
     setNewSitzungTeilnehmerId("");
     setCreateSuccess(false);
     setShowNewSitzungModal(true);
@@ -1319,19 +1317,6 @@ export default function SitzungenPage() {
                         </select>
                       </div>
 
-                      {/* Protokoll */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Protokoll (optional)
-                        </label>
-                        <textarea
-                          value={newSitzungProtokoll}
-                          onChange={(e) => setNewSitzungProtokoll(e.target.value)}
-                          placeholder="Notizen zur Sitzung..."
-                          rows={4}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
-                        />
-                      </div>
                     </div>
 
                     {/* Buttons */}

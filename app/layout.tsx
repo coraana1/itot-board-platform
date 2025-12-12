@@ -18,6 +18,9 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: "ITOT Board Platform",
   description: "Plattform zur Bewertung von Digitalisierungs-Ideen durch das ITOT Board",
+  icons: {
+    icon: "/icon.png",
+  },
 };
 
 export default function RootLayout({
