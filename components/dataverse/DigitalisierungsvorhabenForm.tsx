@@ -147,11 +147,6 @@ export default function DigitalisierungsvorhabenForm({
             )}
           </p>
         </div>
-        {editRecord && (
-          <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusBadge(editRecord.cr6df_lifecyclestatus).class}`}>
-            {getStatusBadge(editRecord.cr6df_lifecyclestatus).text}
-          </span>
-        )}
       </div>
 
       {/* Titel */}
