@@ -49,10 +49,17 @@ export class BaseDataverseClient<T> {
       "Content-Type": "application/json; charset=utf-8",
     };
 
+    // Dataverse: Formatted Values (z.B. Lookup-Namen) in der Response mitliefern
+    const preferParts: string[] = [
+      'odata.include-annotations="OData.Community.Display.V1.FormattedValue"',
+    ];
+
     // Prefer-Header für POST/PATCH um Response-Body zu erhalten
     if (includePrefer) {
-      headers["Prefer"] = "return=representation";
+      preferParts.push("return=representation");
     }
+
+    headers["Prefer"] = preferParts.join(",");
 
     return headers;
   }
