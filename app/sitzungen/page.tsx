@@ -794,26 +794,26 @@ export default function SitzungenPage() {
                                 </td>
                                 <td className="px-4 py-3">
                                   <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                    idee.cr6df_komplexitaet === 562520000 ? "bg-green-100 text-green-700" :
+                                    idee.cr6df_komplexitaet === 562520002 ? "bg-green-100 text-green-700" :
                                     idee.cr6df_komplexitaet === 562520001 ? "bg-yellow-100 text-yellow-700" :
-                                    idee.cr6df_komplexitaet === 562520002 ? "bg-red-100 text-red-700" :
+                                    idee.cr6df_komplexitaet === 562520000 ? "bg-red-100 text-red-700" :
                                     "bg-gray-100 text-gray-500"
                                   }`}>
-                                    {idee.cr6df_komplexitaet === 562520000 ? "Gering" :
+                                    {idee.cr6df_komplexitaet === 562520002 ? "Einfach" :
                                      idee.cr6df_komplexitaet === 562520001 ? "Mittel" :
-                                     idee.cr6df_komplexitaet === 562520002 ? "Hoch" : "–"}
+                                     idee.cr6df_komplexitaet === 562520000 ? "Komplex" : "–"}
                                   </span>
                                 </td>
                                 <td className="px-4 py-3">
                                   <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                    idee.cr6df_kritikalitaet === 562520000 ? "bg-green-100 text-green-700" :
+                                    idee.cr6df_kritikalitaet === 562520002 ? "bg-green-100 text-green-700" :
                                     idee.cr6df_kritikalitaet === 562520001 ? "bg-yellow-100 text-yellow-700" :
-                                    idee.cr6df_kritikalitaet === 562520002 ? "bg-red-100 text-red-700" :
+                                    idee.cr6df_kritikalitaet === 562520000 ? "bg-red-100 text-red-700" :
                                     "bg-gray-100 text-gray-500"
                                   }`}>
-                                    {idee.cr6df_kritikalitaet === 562520000 ? "Gering" :
+                                    {idee.cr6df_kritikalitaet === 562520002 ? "Niedrig" :
                                      idee.cr6df_kritikalitaet === 562520001 ? "Mittel" :
-                                     idee.cr6df_kritikalitaet === 562520002 ? "Hoch" : "–"}
+                                     idee.cr6df_kritikalitaet === 562520000 ? "Hoch" : "–"}
                                   </span>
                                 </td>
                                 <td className="px-4 py-3 text-sm text-gray-600">

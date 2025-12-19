@@ -9,8 +9,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Lightbulb, Settings, LogOut, Loader2 } from "lucide-react";
+import { Settings, LogOut, Loader2 } from "lucide-react";
 
 interface UserInfo {
   UserId: string;
@@ -122,7 +123,13 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-14">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <Lightbulb size={20} className="text-violet-600" />
+            <Image
+              src="/icon.png"
+              alt="ITOT Board"
+              width={20}
+              height={20}
+              className="rounded"
+            />
             <span className="font-semibold text-gray-900">ITOT Board</span>
           </Link>
 
